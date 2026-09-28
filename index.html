@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Cumpleaños: Rally NFS</title>
+    <style>
+        body {
+            background-color: #0b0c10;
+            color: #fff;
+            font-family: 'Arial', sans-serif;
+            text-align: center;
+            margin: 0;
+            padding: 15px;
+        }
+        h1 { color: #ff0055; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 5px; }
+        .hud { color: #66fcf1; font-weight: bold; margin-bottom: 15px; }
+        
+        /* Contenedor del mapa */
+        #map-container {
+            position: relative;
+            width: 100%;
+            max-width: 400px;
+            height: 450px;
+            margin: 0 auto;
+            background: #1f2833;
+            border: 3px solid #ff0055;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 15px rgba(255, 0, 85, 0.4);
+        }
+
+        /* Líneas de la ruta (pista) */
+        .track {
+            position: absolute;
+            background-color: #45a29e;
+            z-index: 1;
+        }
+        #track1 { top: 70px; left: 60px; width: 8px; height: 120px; }
+        #track2 { top: 190px; left: 60px; width: 220px; height: 8px; }
+        #track3 { top: 190px; left: 280px; width: 8px; height: 140px; }
+
+        /* Capas de Niebla (Fog of War) que borran el camino */
+        .fog {
+            position: absolute;
+            background-color: #000;
+            opacity: 0.85;
+            z-index: 2;
+            transition: all 0.5s ease;
+        }
+        #fog1 { top: 70px; left: 50px; width: 30px; height: 130px; display: none; }
+        #fog2 { top: 180px; left: 50px; width: 240px; height: 30px; display: none; }
+
+        /* Puntos/Checkpoints */
+        .checkpoint {
+            position: absolute;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: #66fcf1;
+            color: #000;
+            font-weight: bold;
+            line-height: 30px;
+            font-size: 14px;
+            z-index: 3;
+        }
+        #cp0 { top: 50px; left: 49px; }
+        #cp1 { top: 180px; left: 49px; }
+        #cp2 { top: 180px; left: 269px; }
+        #cp3 { top: 320px; left: 269px; background: #ff0055; color: #fff; }
+
+        /* El Carrito NFS */
+        #car {
+            position: absolute;
+            font-size: 24px;
+            z-index: 4;
+            transition: all 1s ease-in-out;
+            top: 45px; left: 50px;
+        }
+
+        /* Panel de instrucciones */
+        .instruction-box {
+            margin-top: 20px;
+            padding: 15px;
+            background: #1f2833;
+            border-radius: 8px;
+            border-left: 5px solid #66fcf1;
+        }
+        .btn-win {
+            background: #ff0055;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>RALLY DE CUMPLEAÑOS</h1>
+    <div class="hud" id="status-hud">ESTADO: ESPERANDO SALIDA</div>
+
+    <div id="map-container">
+        <!-- Pistas de conexión -->
+        <div class="track" id="track1"></div>
+        <div class="track" id="track2"></div>
+        <div class="track" id="track3"></div>
+
+        <!-- Capas para borrar el camino recorrido -->
+        <div class="fog" id="fog1"></div>
+        <div class="fog" id="fog2"></div>
+
+        <!-- Puntos en el mapa con nombres de la casa -->
+        <div class="checkpoint" id="cp0">1</div>
+        <div class="checkpoint" id="cp1">2</div>
+        <div class="checkpoint" id="cp2">3</div>
+        <div class="checkpoint" id="cp3">★</div>
+
+        <!-- Ícono del carro -->
+        <div id="car">🏎️</div>
+    </div>
+
+    <div class="instruction-box">
+        <p id="instruction">Cargando datos de telemetría...</p>
+    </div>
+
+    <script>
+        // Leer el parámetro del QR desde la URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const stage = urlParams.get('checkpoint');
+
+        const car = document.getElementById('car');
+        const hud = document.getElementById('status-hud');
+        const instruction = document.getElementById('instruction');
+        const fog1 = document.getElementById('fog1');
+        const fog2 = document.getElementById('fog2');
+
+        // Lógica según el código QR escaneado
+        if (stage === '1' || !stage) {
+            hud.innerText = "CHECKPOINT 1: ENTRADA";
+            car.style.top = "45px";
+            car.style.left = "50px";
+            instruction.innerHTML = "¡Motor encendido! Busca y escanea el <b>QR #2</b> que está pegado en la <b>Cocina</b>.";
+        } 
+        else if (stage === '2') {
+            hud.innerText = "CHECKPOINT 2: COCINA";
+            car.style.top = "175px";
+            car.style.left = "50px";
+            fog1.style.display = "block"; // Borra el camino anterior
+            instruction.innerHTML = "¡Tramo 1 completado! El camino previo ha sido cubierto. Dirígete a la <b>Habitación</b> para encontrar el <b>QR #3</b>.";
+        } 
+        else if (stage === '3') {
+            hud.innerText = "CHECKPOINT 3: HABITACIÓN";
+            car.style.top = "175px";
+            car.style.left = "270px";
+            fog1.style.display = "block";
+            fog2.style.display = "block"; // Borra el segundo tramo
+            instruction.innerHTML = "¡Casi en la meta! Ve a la <b>Sala</b> y busca el <b>QR Final</b>.";
+        } 
+        else if (stage === 'final') {
+            hud.innerText = "¡META ALCANZADA!";
+            hud.style.color = "#ff0055";
+            car.style.top = "315px";
+            car.style.left = "270px";
+            fog1.style.display = "block";
+            fog2.style.display = "block";
+            instruction.innerHTML = "🎉 <b>¡MISIÓN CUMPLIDA!</b> 🎉<br><br>Tu recompensa te espera en las coordenadas:<br><b>DEBAJO DE LA MESA EN LA SALA</b>";
+        }
+    </script>
+</body>
+</html>
